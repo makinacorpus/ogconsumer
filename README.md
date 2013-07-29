@@ -15,10 +15,8 @@ Very basic usage:
     $service = new Service();
 
     try {
-
         $node = $service->fetch(
                 "https://www.youtube.com/watch?v=LH5ay10RTGY");
-
     } catch (\Exception $e) {
         // Your error handling
     }
@@ -48,6 +46,8 @@ parallel HTTP implementation:
     foreach ($nodes as $node) {
         if (false !== $node) {
             echo $node->getTitle(), "\n";
+        } else {
+            // Your error handling here
         }
     }
 
@@ -86,10 +86,11 @@ Note that you can override existing types the exact same way.
 ### HTTP performance
 
 Default cURL implementation of the *FetcherInterface* will attempt to use
-*curl_multi_exec* whenever multiple nodes are fetched altogether. This gave
-the best testing results.
+*curl_multi_exec()* whenever multiple nodes are fetched altogether. This
+gives the best testing results.
 
 From the *RealLifeTest* class fetching 6 pages we had those average numbers:
-    1. Using *FallbackFetcher*: 21 seconds
-    2. Using a custom cURL implement (without multi): 8 seconds
-    3. Using *CurlFetcher*: 3 seconds
+
+ + Using *FallbackFetcher*: 21 seconds
+ + Using a custom cURL implement (without multi): 8 seconds
+ + Using *CurlFetcher*: 3 seconds
