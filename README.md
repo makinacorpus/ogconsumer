@@ -6,6 +6,11 @@ various places over the web.
 This API exists because most existing PHP consumers don't provide any high
 level API for managing data types, formatting and validating.
 
+## Status
+
+Unfinished! Right now properties cannot be parsed as multiple, the parser
+needs to be rewritten from scratch.
+
 ## Basic usage
 
 Very basic usage:
