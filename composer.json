@@ -1,0 +1,17 @@
+{
+    "name": "makinacorpus/ogconsumer",
+    "description": "Open graph consumer helper",
+    "authors": [
+        {
+            "name": "Pierre Rineau @ Makina Corpus",
+            "email": "pierre.rineau@makina-corpus.com",
+            "homepage": "http://www.makina-corpus.com",
+            "role": "Developer"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "OgConsumer": "src/"
+        }
+    }
+}
