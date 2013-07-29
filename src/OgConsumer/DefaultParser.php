@@ -129,8 +129,7 @@ class DefaultParser implements ParserInterface
             return;
         }
 
-        // FIXME: Parse type.
-        // Note: parsing type depends on the schema.
+        // FIXME: Parse type. Note: parsing type depends on the schema.
 
         return $value;
     }

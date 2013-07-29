@@ -6,5 +6,4 @@ use OgConsumer\Node;
 
 class Article extends Node
 {
-    
 }

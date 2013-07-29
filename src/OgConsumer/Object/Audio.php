@@ -2,6 +2,6 @@
 
 namespace OgConsumer\Object;
 
-class Video extends Image
+class Audio extends AbstractMedia
 {
 }

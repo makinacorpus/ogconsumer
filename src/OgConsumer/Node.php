@@ -97,7 +97,10 @@ class Node implements \ArrayAccess, \IteratorAggregate, \Countable
      */
     public function getUrl()
     {
-        return $this->url;
+        if (isset($this->data['url'])) {
+            return $this->data['url'];
+        }
+        return self::RETURN_ERROR;
     }
 
     /**
@@ -120,7 +123,7 @@ class Node implements \ArrayAccess, \IteratorAggregate, \Countable
     public function getDescription()
     {
         if (isset($this->data['description'])) {
-            $this->data['description'];
+            return $this->data['description'];
         }
     }
 
@@ -132,7 +135,7 @@ class Node implements \ArrayAccess, \IteratorAggregate, \Countable
     public function getDeterminer()
     {
         if (isset($this->data['determiner'])) {
-            $this->data['determiner'];
+            return $this->data['determiner'];
         }
     }
 
@@ -143,8 +146,8 @@ class Node implements \ArrayAccess, \IteratorAggregate, \Countable
      */
     public function getLocale()
     {
-        if (isset($this->data['locale.alternate'])) {
-            $this->data['locale.alternate'];
+        if (isset($this->data['locale'])) {
+            return $this->data['locale'];
         }
         return self::DEFAULT_LOCALE;
     }
@@ -157,7 +160,14 @@ class Node implements \ArrayAccess, \IteratorAggregate, \Countable
     public function getAlternateLocales()
     {
         if (isset($this->data['locale.alternate'])) {
-            return $this->data['locale.alternate'];
+            if (is_array($this->data['locale.alternate'])) {
+                return $this->data['locale.alternate'];
+            } else {
+                // Prevent from potentially malformed input to misbehave, note
+                // that this also can happen legally if the site did put only
+                // one alternate locale in its meta tags
+                return array($this->data['locale.alternate']);
+            }
         }
         return array();
     }

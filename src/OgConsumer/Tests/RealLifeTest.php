@@ -13,6 +13,10 @@ class RealLifeTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
+        if (!$GLOBALS['DO_EXTERNAL_TESTS']) {
+            $this->markTestSkipped("External tests are disabled");
+        }
+
         $this->service = new Service();
     }
 
