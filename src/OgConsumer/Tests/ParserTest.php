@@ -21,6 +21,17 @@ class ParserTest extends \PHPUnit_Framework_TestCase
         $this->service = new Service();
     }
 
+    public function testParseImageArray()
+    {
+        $node = $this
+            ->service
+            ->fetch(
+                $this->getFile('image-array'));
+
+        print_r($node);
+        die();
+    }
+
     public function testParseVideo()
     {
         $node = $this
