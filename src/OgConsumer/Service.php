@@ -114,14 +114,11 @@ class Service
     public function fetch($url)
     {
         return $this
-            ->getInstanceFromData(
+            ->parser
+            ->parse(
                 $this
-                    ->parser
-                    ->parse(
-                        $this
-                          ->fetcher
-                          ->fetch($url)
-                    )
+                  ->fetcher
+                  ->fetch($url)
             );
     }
 

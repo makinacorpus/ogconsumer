@@ -9,187 +9,142 @@ namespace OgConsumer;
  * using it ensures that we are able to parse even malformed HTML in a very
  * liberal way (and ensures we do it fast!)
  *
- * This parser contains some bits of customizations from
- * https://github.com/scottmac/opengraph regarding some malformed well known
- * sites data. Credits goes to their author. 
+ * This parser is very loosly typed except for a few known types, it will
+ * transform any structured object or array dynamically during parsing
  */
 class DefaultParser implements ParserInterface
 {
     /**
-     * Parse boolean from value
+     * Push value into given context array
      *
-     * @param string $value
+     * This function handle value arrays transparently
+     * So sad the http://ogp.me/ spec does not really specifies where
+     * or when we should use arrays or single values
      *
-     * @return bool
+     * @param string $name Value property name
+     * @param mixed $value Value content
+     * @param array $data  Container where to push
      */
-    static public function parseBoolean($value)
+    protected function pushValue($name, $value, &$data)
     {
-        if (is_numeric($value)) {
-            return (bool)$value;
-        } else if (is_string($value)) {
-            return 'true' === strtolower($value);
+        if (isset($data[$name])) {
+            if (is_array($data[$name])) {
+                $data[$name][] = $value;
+            } else {
+                $data[$name] = array(
+                    $data[$name],
+                    $value,
+                );
+            }
+        } else {
+            $data[$name] = $value;
         }
-        return true;
     }
 
     /**
-     * Parse datetime from value
+     * Create node from given meta list
      *
-     * @param string $value
-     *
-     * @return DateTime
+     * @param DOMNode[] &$stack Current meta item stack
+     * @param array &$data      Current contextual data
      */
-    static public function parseDateTime($value)
+    protected function createNode(array &$stack)
     {
-        throw new \Exception("Not implemented yet");
-    }
+        $data        = array();
+        $context     = null;
+        $contextData = null;
 
-    /**
-     * Parse enum from value
-     *
-     * @param string $value
-     *
-     * @return string[]
-     */
-    static public function parseEnum($value)
-    {
-        return (string)$value;
-    }
+        while ($node = array_shift($stack)) {
 
-    /**
-     * Parse float from value
-     *
-     * @param string $value
-     *
-     * @return float
-     */
-    static public function parseFloat($value)
-    {
-        return (float)$value;
-    }
+            $propertyName = substr($node->getAttribute('property'), 3);
+            $dataType     = TypeHelper::getPropertyDataType($propertyName);
+            $value        = TypeHelper::parseValue($node->getAttribute('content'), $dataType);
 
-    /**
-     * Parse integer from value
-     *
-     * @param string $value
-     *
-     * @return integer
-     */
-    static public function parseInteger($value)
-    {
-        return (int)$value;
-    }
+            if (TypeHelper::DATATYPE_STRUCTURED === $dataType) {
 
-    /**
-     * Parse string from value
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    static public function parseString($value)
-    {
-        return (string)$value;
-    }
+                if (isset($context)) {
+                    // Value is a new structured object we therefore need
+                    // to close the previous context
+                    $this->pushValue($context, new Object($context, $contextData), $data);
+                }
 
-    /**
-     * Parse URL from value
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    public static function parseUrl($value)
-    {
-        return (string)$url;
-    }
+                // Create new structured object context
+                $context     = $propertyName;
+                $contextData = array('content' => $value);
 
-    /**
-     * Parse single element and populate data using it
-     *
-     * @param string $propertyName Property name extracted from the property
-     *                             attribuge of the given node
-     * @param \DOMElement $element Meta DOM node containing Open Graph data
-     *
-     * @return mixed               Parsed value
-     */
-    protected function parseElement($propertyName, \DOMElement $element)
-    {
-        // First parse value if any
-        if ($element->hasAttribute("content")) {
-            $value = $element->getAttribute("content");
-        } else if ($element->hasAttribute("value")) {
-            // From https://github.com/scottmac/opengraph some sites might have
-            // malformed open graph data.
-            $value = $element->getAttribute("value");
+            } else {
+                if (isset($context)) {
+                    // Deal with existing context
+                    if (($pos = strpos($propertyName, ':')) &&
+                        (list($target, $objectPropertyName) = explode(':', $propertyName, 2)) &&
+                        $target === $context)
+                    {
+                        // We are still in the same context, push new
+                        // properties to the existing data array
+                        $this->pushValue($objectPropertyName, $value, $contextData);
+
+                    } else {
+                        // We are not in a structured object context anymore
+                        // we must close the previous context
+                        $this->pushValue($context, new Object($context, $contextData), $data);
+                        $context     = null;
+                        $contextData = null;
+
+                        // We finished an object, but we still have a value to
+                        // process, just push it
+                        $this->pushValue($propertyName, $value, $data);
+                    }
+                } else {
+                    $this->pushValue($propertyName, $value, $data);
+                }
+            }
         }
 
-        if (empty($value)) {
-            // Invalid data given
-            return;
+        // Stack traversal could end parsing a structure object
+        if (isset($context)) {
+            $this->pushValue($context, new Object($context, $contextData), $data);
         }
 
-        // FIXME: Parse type. Note: parsing type depends on the schema.
-
-        return $value;
+        return new Node($data);
     }
 
     /**
      * (non-PHPdoc)
      * @see \OgConsumer\ParserInterface::parse()
      */
-    public function parse($data)
+    public function parse($content)
     {
-        $nodeData = array();
+        $data = array();
+        $stack = array();
 
         // Disable libxml error handling temporarily
         $status = libxml_use_internal_errors(true);
 
         $d = new \DOMDocument();
-        $d->loadHTML($data);
+        $d->loadHTML($content);
 
-        $meta = $d->getElementsByTagName('meta');
+        $metaList = $d->getElementsByTagName('meta');
 
         // Enable back libxml error handling if different
         if (!$status) {
             libxml_use_internal_errors(false);
         }
 
-        if (!$meta || 0 === $meta->length) {
+        if (!$metaList || 0 === $metaList->length) {
             throw new \RuntimeException(
                 sprintf("Invalid HTML given: document has no meta"));
         }
 
-        foreach ($meta as $node) {
+        foreach ($metaList as $node) {
             if ($node->hasAttribute("property") &&
+                $node->hasAttribute("content") &&
                 ($propertyName = $node->getAttribute('property')) &&
                 // Only treat properties that are in the og: namespace
                 'og:' === substr($propertyName, 0, 3))
             {
-                $name  = substr($propertyName, 3);
-                $value = $this->parseElement($name, $node);
-
-                // Empty values have no use for us
-                if (empty($value)) {
-                    continue;
-                }
-
-                // Handle enum and array values
-                if (isset($nodeData[$name])) {
-                    if (is_array($name)) {
-                        $nodeData[$name][] = $value;
-                    } else {
-                        $nodeData[$name] = array(
-                            $nodeData[$name],
-                            $value,
-                        );
-                    }
-                } else {
-                    $nodeData[$name] = $value;
-                }
+                $stack[] = $node;
             }
         }
 
-        return $nodeData;
+        return $this->createNode($stack);
     }
 }

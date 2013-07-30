@@ -10,9 +10,9 @@ interface ParserInterface
     /**
      * Parse data from content
      *
-     * @param string $data Fetched HTML content
+     * @param string $content Fetched HTML content
      *
-     * @return Node        Open graph node data
+     * @return Node           Open graph node data
      */
-    public function parse($data);
+    public function parse($content);
 }
