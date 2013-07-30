@@ -9,7 +9,7 @@ namespace OgConsumer;
  *
  * This class does not support (yet) schema introspection and data validation
  */
-final class TypeHelper
+final class Type
 {
     /**
      * Boolean
@@ -57,6 +57,56 @@ final class TypeHelper
     const DATATYPE_UNKNOWN = 0;
 
     /**
+     * Default registered types
+     *
+     * @var string[]
+     */
+    static protected $registeredTypes = array(
+        'default' => '\OgConsumer\Object',
+        'audio'   => '\OgConsumer\Object\Audio',
+        'image'   => '\OgConsumer\Object\Image',
+        'video'   => '\OgConsumer\Object\Video',
+    );
+
+    /**
+     * Register new structured object types
+     *
+     * This method allow defaults override
+     *
+     * @param array $types Key value pairs: keys are type machine name from
+     *                     the og:type property while values are valid class
+     *                     names that should derivate from OgConsumer\Object
+     */
+    static public function register(array $types)
+    {
+        foreach ($types as $type => $class) {
+            if (!class_exists($class)) {
+                throw new \LogicException(
+                    "Class %s does not exists", $class);
+            }
+
+            self::$registeredTypes[$type] = $class;
+        }
+    }
+
+    /**
+     * Get new object
+     *
+     * @param string $structureType Structured object type
+     * @param array $data           Object properties
+     *
+     * @return Object
+     */
+    static public function getObject($structureType = 'default', array $data = null)
+    {
+        if (!isset(self::$registeredTypes[$structureType])) {
+            $structureType = 'default';
+        }
+
+        return new self::$registeredTypes[$structureType]($structureType, $data);
+    }
+
+    /**
      * Find datatype to apply depending on the property name and structure
      * type if any
      *
@@ -67,6 +117,10 @@ final class TypeHelper
      */
     static public function getPropertyDataType($propertyName, $structureType = null)
     {
+        if (!$structureType && isset(self::$registeredTypes[$propertyName])) {
+            return self::DATATYPE_STRUCTURED;
+        }
+
         // @todo No usage of $structuredType yet because we have no ambiguities
         // yet in various property names inside structure properties
         switch ($propertyName) {

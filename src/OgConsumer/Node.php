@@ -159,7 +159,7 @@ class Node extends Object
      *
      * @return Video
      */
-    public function getAudio()
+    public function getVideo()
     {
         return $this->get('video');
     }
@@ -169,7 +169,7 @@ class Node extends Object
      *
      * @return Video[]
      */
-    public function getAllAudio()
+    public function getAllVideo()
     {
         return $this->getAll('video');
     }

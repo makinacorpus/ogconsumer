@@ -56,15 +56,22 @@ class DefaultParser implements ParserInterface
         while ($node = array_shift($stack)) {
 
             $propertyName = substr($node->getAttribute('property'), 3);
-            $dataType     = TypeHelper::getPropertyDataType($propertyName);
-            $value        = TypeHelper::parseValue($node->getAttribute('content'), $dataType);
+            $dataType     = Type::getPropertyDataType($propertyName);
+            $value        = Type::parseValue($node->getAttribute('content'), $dataType);
 
-            if (TypeHelper::DATATYPE_STRUCTURED === $dataType) {
+            if (Type::DATATYPE_STRUCTURED === $dataType) {
 
                 if (isset($context)) {
                     // Value is a new structured object we therefore need
                     // to close the previous context
-                    $this->pushValue($context, new Object($context, $contextData), $data);
+                    $this->pushValue(
+                        $context,
+                        Type::getObject(
+                            $context,
+                            $contextData
+                        ),
+                        $data
+                    );
                 }
 
                 // Create new structured object context
@@ -80,12 +87,23 @@ class DefaultParser implements ParserInterface
                     {
                         // We are still in the same context, push new
                         // properties to the existing data array
-                        $this->pushValue($objectPropertyName, $value, $contextData);
-
+                        $this->pushValue(
+                            $objectPropertyName,
+                            $value,
+                            $contextData
+                        );
                     } else {
                         // We are not in a structured object context anymore
                         // we must close the previous context
-                        $this->pushValue($context, new Object($context, $contextData), $data);
+                        $this->pushValue(
+                            $context,
+                            Type::getObject(
+                                $context,
+                                $contextData
+                            ),
+                            $data
+                        );
+
                         $context     = null;
                         $contextData = null;
 
@@ -101,7 +119,14 @@ class DefaultParser implements ParserInterface
 
         // Stack traversal could end parsing a structure object
         if (isset($context)) {
-            $this->pushValue($context, new Object($context, $contextData), $data);
+            $this->pushValue(
+                $context,
+                Type::getObject(
+                    $context,
+                    $contextData
+                ),
+                $data
+            );
         }
 
         return new Node($data);

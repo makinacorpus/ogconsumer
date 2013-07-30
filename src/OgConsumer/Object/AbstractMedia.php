@@ -2,31 +2,27 @@
 
 namespace OgConsumer\Object;
 
-use OgConsumer\Node;
+use OgConsumer\Object;
 
-abstract class AbstractMedia extends Node
+abstract class AbstractMedia extends Object
 {
     /**
-     * Get "og:image:secure_url" property value
+     * Get "og:MEDIA:secure_url" property value
      *
      * @return int
      */
     public function getSecureUrl()
     {
-        if (isset($this->data['image:secure_url'])) {
-            return $this->data['image:secure_url'];
-        }
+        return $this->get('secure_url');
     }
 
     /**
-     * Get "og:image:type" property value
+     * Get "og:MEDIA:type" property value
      *
      * @return int
      */
     public function getMimeType()
     {
-        if (isset($this->data['image:type'])) {
-            return $this->data['image:type'];
-        }
+        return $this->get('type');
     }
 }
