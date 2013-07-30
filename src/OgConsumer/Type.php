@@ -57,12 +57,17 @@ final class Type
     const DATATYPE_UNKNOWN = 0;
 
     /**
+     * Default object class
+     */
+    const OBJECT_CLASS_DEFAULT = '\OgConsumer\Object';
+
+    /**
      * Default registered types
      *
      * @var string[]
      */
     static protected $registeredTypes = array(
-        'default' => '\OgConsumer\Object',
+        'default' => self::OBJECT_CLASS_DEFAULT,
         'audio'   => '\OgConsumer\Object\Audio',
         'image'   => '\OgConsumer\Object\Image',
         'video'   => '\OgConsumer\Object\Video',
@@ -80,7 +85,9 @@ final class Type
     static public function register(array $types)
     {
         foreach ($types as $type => $class) {
-            if (!class_exists($class)) {
+            if (empty($class)) {
+                $class = self::OBJECT_CLASS_DEFAULT;
+            } else if (!class_exists($class)) {
                 throw new \LogicException(
                     "Class %s does not exists", $class);
             }
@@ -117,7 +124,7 @@ final class Type
      */
     static public function getPropertyDataType($propertyName, $structureType = null)
     {
-        if (!$structureType && isset(self::$registeredTypes[$propertyName])) {
+        if (null === $structureType && isset(self::$registeredTypes[$propertyName])) {
             return self::DATATYPE_STRUCTURED;
         }
 

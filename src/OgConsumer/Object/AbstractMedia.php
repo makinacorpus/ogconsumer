@@ -7,6 +7,16 @@ use OgConsumer\Object;
 abstract class AbstractMedia extends Object
 {
     /**
+     * Get "og:MEDIA" property value
+     *
+     * @return int
+     */
+    public function getUrl()
+    {
+        return $this->get('content');
+    }
+
+    /**
      * Get "og:MEDIA:secure_url" property value
      *
      * @return int

@@ -6,31 +6,76 @@ various places over the web.
 This API exists because most existing PHP consumers don't provide any high
 level API for managing data types, formatting and validating.
 
-## Status
+## Usage
 
-Unfinished! Right now properties cannot be parsed as multiple, the parser
-needs to be rewritten from scratch.
-
-## Basic usage
-
-Very basic usage:
+### Simple example
 
     use OgConsumer\Service;
 
     $service = new Service();
 
     try {
-        $node = $service->fetch(
-                "https://www.youtube.com/watch?v=LH5ay10RTGY");
+        $node = $service->fetch("https://www.youtube.com/watch?v=LH5ay10RTGY");
+
+        foreach ($node->getImageAll() as $iamge) {
+            echo "<img src=\"", $image->getUrl(), "\"/>\n";
+        }
+        if ($video = $node->getVideo()) {
+            // Of course this one is fake don't copy/paste it!
+            echo "<object" src=\"", $video->getUrl(), "\"/>\n";
+        }
+
+        // ...
+
     } catch (\Exception $e) {
         // Your error handling
     }
 
-The $node object is now a valid OgConsumer\Node instance. If the *og:type*
-property is registered and known, it can be a specific object instance. In this
-case, the *video* type is handled by our core API:
+### Array handling
 
-    echo get_class($node); // Outputs "OgConsumer\Object\Video"
+Official specification is not really clear about how we should handle duplicate
+properties in the parsed data, most examples don't have but some have, see
+*http://ogp.me/#array* for more information.
+
+This API handle every value or structure object property as a single value
+internally until the parser finds duplicates: every property may arbitrary be
+converted to an array in the node object graph.
+
+For example, consider this example (from *http://ogp.me/#array*):
+
+        <meta property="og:image" content="http://example.com/rock.jpg" />
+        <meta property="og:image:width" content="300" />
+        <meta property="og:image:height" content="300" />
+        <meta property="og:image" content="http://example.com/rock2.jpg" />
+        <meta property="og:image" content="http://example.com/rock3.jpg" />
+        <meta property="og:image:height" content="1000" />
+
+The API will convert this as a PHP array of OgConsumer\Object\Image instances
+you can manipulate quite easily:
+
+    $node = $service->fetch('file://resources/image-array.html');
+
+    // Fetch the first image
+    $image = $node->getImage();
+    echo "Image is ", $image->getUrl(), "\n";
+
+    // Fetch all images
+    foreach ($node->getAllImages() as $index => $image) {
+        echo "Image #", $index, " is ", $image->getUrl(), "\n";
+    }
+
+This API is liberal in what it accepts and does not include node parsing for
+the complete standard nor does schema based introspection, if you need to
+access arbitrary parsed data without extending the API you can use those
+two generic methods:
+
+    // Get the first "some_key" property parsed
+    $node->get('some_key');
+
+    // Get all the "some_key" properties parsed
+    $node->getAll('some_key');
+
+### Fetching multiple nodes at once
 
 For optimal performances you can do multiple HTTP calls at once, using the cURL
 parallel HTTP implementation:
@@ -68,23 +113,39 @@ container, and you're ready to go!
 
 ### Registering new types
 
-If some types you need to use are not recognized, you can create your own class
-to manage them:
+The package provides basic handling for those media types:
+
+ *  Audio
+ *  Image
+ *  Video
+
+If you need to extend the parser in order to be able to fetch other structured
+objects, you need to register their namespace:
 
     namespace My\Namespace;
 
-    class SomeType extends \OgConsumer\Node
+    class SomeType extends \OgConsumer\Object
     {
         // Your stuff here
     }
 
 Then in your application bootstrap add:
 
-    \OgConsummer\Service::register(array(
+    \OgConsummer\Type::register(array(
         'some_type' => '\My\Namespace\SomeType',
     ));
 
-Note that you can override existing types the exact same way.
+Note that you can override existing types.
+
+If you don't want to write your own class, you can also set the array values
+as an explicit null, and you new structured object type will use the default
+*\OgConsumer\Object* class:
+
+    \OgConsummer\Type::register(array(
+        'foo' => null,
+        'bar' => null,
+        'baz' => '\Foo\Bar',
+    ));
 
 ## Additional notes
 

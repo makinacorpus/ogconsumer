@@ -2,6 +2,10 @@
 
 namespace OgConsumer;
 
+use OgConsumer\Object\Audio;
+use OgConsumer\Object\Image;
+use OgConsumer\Object\Video;
+
 /**
  * Node data
  *
@@ -50,7 +54,7 @@ class Node extends Object
      */
     public function getImage()
     {
-        return $this->get($name);
+        return $this->get('image');
     }
 
     /**
@@ -90,7 +94,7 @@ class Node extends Object
      *
      * @return Audio[]
      */
-    public function getAllAudio()
+    public function getAllAudios()
     {
         return $this->getAll('audio');
     }
@@ -169,7 +173,7 @@ class Node extends Object
      *
      * @return Video[]
      */
-    public function getAllVideo()
+    public function getAllVideos()
     {
         return $this->getAll('video');
     }
