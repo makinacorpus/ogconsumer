@@ -4,64 +4,31 @@ namespace OgConsumer;
 
 /**
  * Node data
+ *
+ * og:title, og:image, og:type and og:url are supposed to be mandatory
+ * but hey we don't care, nobody respects that standard and we have greater
+ * chances for this to work being liberal on what we accept
  */
-class Node implements \ArrayAccess, \IteratorAggregate, \Countable
+class Node extends Object
 {
-    /**
-     * Default type if none provided
-     */
-    const DEFAULT_TYPE = "website";
-
     /**
      * Default locale if none provided
      */
     const DEFAULT_LOCALE = "en_US";
 
     /**
-     * Value returned for mandatory properties when none set
-     */
-    const RETURN_ERROR = 'ERROR';
-
-    /**
-     * @var array
-     */
-    private $data = array();
-
-    /**
      * Default constructor
      *
+     * @param string $type Object type
      * @param string $data Arbitrary parsed data from node
      */
-    public function __construct(array $data)
+    public function __construct(array $data = array())
     {
         $this->data = $data;
-    }
 
-    /**
-     * Tell if the node contains all required properties
-     *
-     * @return boolean
-     */
-    public function isValid()
-    {
-        return
-            // Remember that type can be defaulted to "website"
-            isset($this->data['title']) &&
-            isset($this->data['type']) &&
-            isset($this->data['image']);
-    }
-
-    /**
-     * Get "og:type" property value
-     *
-     * @return string
-     */
-    public function getType()
-    {
         if (isset($this->data['type'])) {
-            return $this->data['type'];
+            $this->type = $this->data['type'];
         }
-        return static::DEFAULT_TYPE;
     }
 
     /**
@@ -74,20 +41,26 @@ class Node implements \ArrayAccess, \IteratorAggregate, \Countable
         if (isset($this->data['title'])) {
             return $this->data['title'];
         }
-        return self::RETURN_ERROR;
     }
 
     /**
      * Get "og:image" property value
      *
-     * @return string
+     * @return Image
      */
     public function getImage()
     {
-        if (isset($this->data['image'])) {
-            return $this->data['image'];
-        }
-        return self::RETURN_ERROR;
+        return $this->get($name);
+    }
+
+    /**
+     * Get "og:image" property value as array
+     *
+     * @return Image[]
+     */
+    public function getAllImages()
+    {
+        return $this->getAll('image');
     }
 
     /**
@@ -100,19 +73,26 @@ class Node implements \ArrayAccess, \IteratorAggregate, \Countable
         if (isset($this->data['url'])) {
             return $this->data['url'];
         }
-        return self::RETURN_ERROR;
     }
 
     /**
      * Get "og:audio" property value
      *
-     * @return string
+     * @return Audio
      */
     public function getAudio()
     {
-        if (isset($this->data['audio'])) {
-            $this->data['audio'];
-        }
+        return $this->get('audio');
+    }
+
+    /**
+     * Get "og:audio" property value as array
+     *
+     * @return Audio[]
+     */
+    public function getAllAudio()
+    {
+        return $this->getAll('audio');
     }
 
     /**
@@ -159,17 +139,7 @@ class Node implements \ArrayAccess, \IteratorAggregate, \Countable
      */
     public function getAlternateLocales()
     {
-        if (isset($this->data['locale.alternate'])) {
-            if (is_array($this->data['locale.alternate'])) {
-                return $this->data['locale.alternate'];
-            } else {
-                // Prevent from potentially malformed input to misbehave, note
-                // that this also can happen legally if the site did put only
-                // one alternate locale in its meta tags
-                return array($this->data['locale.alternate']);
-            }
-        }
-        return array();
+        return $this->getAll('locale:alternate');
     }
 
     /**
@@ -187,86 +157,20 @@ class Node implements \ArrayAccess, \IteratorAggregate, \Countable
     /**
      * Get "og:video" property value
      *
-     * @return string
+     * @return Video
      */
-    public function getVideo()
+    public function getAudio()
     {
-        if (isset($this->data['video'])) {
-            return $this->data['video'];
-        }
+        return $this->get('video');
     }
 
     /**
-     * (non-PHPdoc)
-     * @see ArrayAccess::offsetExists()
-     */
-    public function offsetExists($offset)
-    {
-        return !empty($this->data[$offset]);
-    }
-
-    /**
-     * (non-PHPdoc)
-     * @see ArrayAccess::offsetGet()
-     */
-    public function offsetGet($offset)
-    {
-        if (isset($this->data[$offset])) {
-            return $this->data[$offset];
-        }
-    }
-
-    /**
-     * (non-PHPdoc)
-     * @see ArrayAccess::offsetSet()
-     */
-    public function offsetSet($offset, $value)
-    {
-        trigger_error("Object is readonly", E_USER_WARNING);
-    }
-
-    /**
-     * (non-PHPdoc)
-     * @see ArrayAccess::offsetUnset()
-     */
-    public function offsetUnset ($offset)
-    {
-        trigger_error("Object is readonly", E_USER_WARNING);
-    }
-
-    /**
-     * (non-PHPdoc)
-     * @see Countable::count()
-     */
-    public function count()
-    {
-        return count($this->data);
-    }
-
-    /**
-     * (non-PHPdoc)
-     * @see IteratorAggregate::getIterator()
-     */
-    public function getIterator ()
-    {
-        return new \ArrayIterator($this->data);
-    }
-
-    /**
-     * Convert back this instance to the original parsed data array
+     * Get "og:video" property value as array
      *
-     * @return array
+     * @return Video[]
      */
-    public function toArray()
+    public function getAllAudio()
     {
-        return $this->data;
-    }
-
-    /**
-     * Give back valid HTML
-     */
-    public function __toString()
-    {
-        throw new \Exception("Not implemented yet");
+        return $this->getAll('video');
     }
 }
