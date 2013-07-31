@@ -3,7 +3,7 @@
 namespace OgConsumer;
 
 /**
- * Default parser implementation using PHP libxml support
+ * Default extensible parser implementation using PHP libxml support
  *
  * libxml is probably the fastest and the most flexible HTML parser in PHP,
  * using it ensures that we are able to parse even malformed HTML in a very

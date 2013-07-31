@@ -62,16 +62,82 @@ final class Type
     const OBJECT_CLASS_DEFAULT = '\OgConsumer\Object';
 
     /**
-     * Default registered types
+     * Registered known structured objects
      *
-     * @var string[]
+     * @var array[]
      */
-    static protected $registeredTypes = array(
-        'default' => self::OBJECT_CLASS_DEFAULT,
-        'audio'   => '\OgConsumer\Object\Audio',
-        'image'   => '\OgConsumer\Object\Image',
-        'video'   => '\OgConsumer\Object\Video',
+    static protected $types = array(
+        'default' => array(
+            'class'      => self::OBJECT_CLASS_DEFAULT,
+            'properties' => array(),
+        ),
+        'audio' => array(
+            'class'      => '\OgConsumer\Object\Audio',
+            'properties' => array(
+                'type'       => self::DATATYPE_STRING,
+                'secure_url' => self::DATATYPE_URL,
+            ),
+        ),
+        'image' => array(
+            'class'      => '\OgConsumer\Object\Image',
+            'properties' => array(
+                'type'       => self::DATATYPE_STRING,
+                'secure_url' => self::DATATYPE_URL,
+                'height'     => self::DATATYPE_INTEGER,
+                'width'      => self::DATATYPE_INTEGER,
+            ),
+        ),
+        'video' => array(
+            'class'      => '\OgConsumer\Object\Video',
+            'properties' => array(
+                'type'       => self::DATATYPE_STRING,
+                'secure_url' => self::DATATYPE_URL,
+                'height'     => self::DATATYPE_INTEGER,
+                'width'      => self::DATATYPE_INTEGER,
+            ),
+        ),
     );
+
+    /**
+     * Register a single type
+     *
+     * @param string $type      Type name found while parsing
+     * @param string $class     Class name derivating from \OgConsumer\Object
+     *                          to use when instanciating the object in graph
+     * @param array $properties Key value pairs, keys are propertie names and
+     *                          values are associated data type
+     * @param array $merge      Set to false if you don't want the already
+     *                          existing instance known properties to remain
+     */
+    static public function registerType(
+        $type,
+        $class            = null,
+        array $properties = array(),
+        $merge            = true)
+    {
+        if (null !== $class && !class_exists($class)) {
+            throw new \InvalidArgumentException("Class %s does not exists", $class);
+        }
+        if (null === $class && !$merge) {
+            $class = self::OBJECT_CLASS_DEFAULT;
+        }
+
+        if (isset(self::$types[$type]) && $merge) {
+            if (null !== $class) {
+                self::$types[$type]['class'] = $class;
+            }
+            if (!empty($properties)) {
+                foreach ($properties as $name => $datatype) {
+                    self::$types[$type]['properties'][$name] = $datatype;
+                }
+            }
+        } else {
+            self::$types[$type] = array(
+                'class'      => $class,
+                'properties' => $properties,
+            );
+        }
+    }
 
     /**
      * Register new structured object types
@@ -84,15 +150,24 @@ final class Type
      */
     static public function register(array $types)
     {
-        foreach ($types as $type => $class) {
-            if (empty($class)) {
-                $class = self::OBJECT_CLASS_DEFAULT;
-            } else if (!class_exists($class)) {
-                throw new \LogicException(
-                    "Class %s does not exists", $class);
+        foreach ($types as $type => $def) {
+
+            if (is_string($def)) {
+                $def = array(
+                    'class'      => $def,
+                    'properties' => array(),
+                );
+            } else if (is_array($def)) {
+                $def += array(
+                    'class'      => null,
+                    'properties' => array(),
+                );
+            } else {
+                throw new \InvalidArgumentException(
+                    sprintf("Invalid definition for type: %s", $type));
             }
 
-            self::$registeredTypes[$type] = $class;
+            self::registerType($type, $def['class'], $def['properties']);
         }
     }
 
@@ -104,33 +179,36 @@ final class Type
      *
      * @return Object
      */
-    static public function getObject($structureType = 'default', array $data = null)
+    static public function getObject($type = 'default', array $data = null)
     {
-        if (!isset(self::$registeredTypes[$structureType])) {
-            $structureType = 'default';
+        if (!isset(self::$types[$type])) {
+            $type = 'default';
         }
 
-        return new self::$registeredTypes[$structureType]($structureType, $data);
+        return new self::$types[$type]['class']($type, $data);
     }
 
     /**
      * Find datatype to apply depending on the property name and structure
      * type if any
      *
-     * @param string $propertyName  Property name
-     * @param string $structureType Structured data type, if none given
-     *                              consider the property as a top level
-     *                              metadata value
+     * @param string $name  Property name
+     * @param string $type Structured data type, if none given consider the
+     *                     property as a top level metadata value
      */
-    static public function getPropertyDataType($propertyName, $structureType = null)
+    static public function getPropertyDataType($name, $type = null)
     {
-        if (null === $structureType && isset(self::$registeredTypes[$propertyName])) {
-            return self::DATATYPE_STRUCTURED;
+        if (null !== $type &&
+            isset(self::$types[$type]) &&
+            isset(self::$types[$type]['properties'][$name]))
+        {
+            return self::$types[$type]['properties'][$name];
+            // Else fallback on default behavior
         }
 
         // @todo No usage of $structuredType yet because we have no ambiguities
         // yet in various property names inside structure properties
-        switch ($propertyName) {
+        switch ($name) {
 
             case 'secure_url':
             case 'url':
