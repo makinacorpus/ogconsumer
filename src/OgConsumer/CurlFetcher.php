@@ -13,13 +13,24 @@ class CurlFetcher implements FetcherInterface
     static protected $curlOptions = array(
         CURLOPT_FAILONERROR    => true,
         CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS      => 3,
+        CURLOPT_MAXREDIRS      => 5,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 15,
         CURLOPT_SSL_VERIFYHOST => 2,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_USERAGENT      => "OgConsumer",
     );
+
+    static protected function getCurlOptions()
+    {
+        if (empty($_SERVER['HTTP_USER_AGENT'])) {
+            return self::$curlOptions;
+        } else {
+            $ret = self::$curlOptions;
+            $ret[CURLOPT_USERAGENT] = $_SERVER['HTTP_USER_AGENT'];
+            return $ret;
+        } 
+    }
 
     /**
      * (non-PHPdoc)
@@ -28,7 +39,7 @@ class CurlFetcher implements FetcherInterface
     public function fetch($url)
     {
         $ch = curl_init($url);
-        curl_setopt_array($ch, self::$curlOptions);
+        curl_setopt_array($ch, self::getCurlOptions());
         $output = curl_exec($ch);
         curl_close($ch);
 
@@ -55,7 +66,7 @@ class CurlFetcher implements FetcherInterface
         foreach ($urlList as $key => $url) {
             $ch = curl_init($url);
 
-            curl_setopt_array($ch, self::$curlOptions);
+            curl_setopt_array($ch, self::getCurlOptions());
             curl_multi_add_handle($mh, $ch);
 
             $resList[(int)$ch] = $ch;
