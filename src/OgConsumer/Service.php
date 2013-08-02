@@ -79,11 +79,29 @@ class Service
     {
         $ret = array();
 
-        foreach ($this->fetcher->fetchAll($urlList) as $key => $data) {
-            if (false === $data || empty($data)) {
+        if (empty($urlList)) {
+            return $ret; // Short-circuit stupid users
+        }
+
+        // Most fetchers will be faster with only URL than many let's just
+        // do a single call whenever the array has only one entry
+        if (1 === count($urlList)) {
+
+            $url = reset($urlList);
+            $key = key($urlList);
+
+            try {
+                $ret[$key] = $this->fetch($url);
+            } catch (\Exception $e) {
                 $ret[$key] = false;
-            } else {
-                $ret[$key] = $this->parser->parse($data);
+            }
+        } else {
+            foreach ($this->fetcher->fetchAll($urlList) as $key => $data) {
+                if (false === $data || empty($data)) {
+                    $ret[$key] = false;
+                } else {
+                    $ret[$key] = $this->parser->parse($data);
+                }
             }
         }
 

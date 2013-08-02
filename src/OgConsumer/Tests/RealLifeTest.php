@@ -27,6 +27,18 @@ class RealLifeTest extends \PHPUnit_Framework_TestCase
             ->fetch("https://www.youtube.com/watch?v=rTnNwLaTGFI");
     }
 
+    public function testFetchSingleUsingMulitple()
+    {
+        $nodes = $this
+            ->service
+            ->fetchAll(array(
+                "https://www.youtube.com/watch?v=rTnNwLaTGFI",
+            ));
+
+        $this->assertCount(1, $nodes);
+        $this->assertInstanceOf('\OgConsumer\Node', reset($nodes));
+    }
+
     public function testFetchMultiple()
     {
         $urls = array(
@@ -45,6 +57,5 @@ class RealLifeTest extends \PHPUnit_Framework_TestCase
             // All of the previous should work.
             $this->assertInstanceOf('\OgConsumer\Node', $nodes[$key]);
         }
-
     }
 }
